@@ -8,3 +8,4 @@
 5. Compare the words from both documents.
 6. Calculate similarity percentage.
 7. Display plagiarism result.
+8. This is added by Akash.
