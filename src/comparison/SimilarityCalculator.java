@@ -1,6 +1,9 @@
 package comparison;
 
+import java.util.List;
+
 import datastructures.MyHashSet;
+import preprocessing.TextProcessor;
 
 public class SimilarityCalculator {
 
@@ -9,8 +12,8 @@ public class SimilarityCalculator {
         MyHashSet set1 = new MyHashSet();
         MyHashSet set2 = new MyHashSet();
 
-        String[] words1 = text1.toLowerCase().split("\\W+");
-        String[] words2 = text2.toLowerCase().split("\\W+");
+    List<String> words1 = TextProcessor.removeStopwords(TextProcessor.tokenize(text1));
+    List<String> words2 = TextProcessor.removeStopwords(TextProcessor.tokenize(text2));
 
         // Fill sets
         for (String word : words1) {
