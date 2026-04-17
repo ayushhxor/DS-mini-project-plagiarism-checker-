@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Plagiarism Checker — DS Mini Project</title>
+  <meta name="description" content="Upload two text documents and instantly detect the similarity percentage using our DSA-powered plagiarism checker." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ===========================
+       DESIGN TOKENS
+    =========================== */
+    :root {
+      --bg-base:      #0b0f1a;
+      --bg-card:      #111827;
+      --bg-card-2:    #1a2235;
+      --border:       #1f2d45;
+      --border-glow:  #3b82f6;
+
+      --accent-1:     #3b82f6;   /* blue */
+      --accent-2:     #8b5cf6;   /* violet */
+      --accent-grad:  linear-gradient(135deg, #3b82f6, #8b5cf6);
+
+      --danger:       #ef4444;
+      --warning:      #f59e0b;
+      --success:      #10b981;
+
+      --text-primary:   #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted:     #4b5568;
+
+      --radius-sm:  8px;
+      --radius-md:  14px;
+      --radius-lg:  22px;
+      --radius-xl:  32px;
+
+      --shadow-card: 0 8px 40px rgba(0,0,0,.55);
+      --shadow-glow: 0 0 40px rgba(59,130,246,.25);
+    }
+
+    /* ===========================
+       RESET & BASE
+    =========================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ===========================
+       ANIMATED BACKGROUND
+    =========================== */
+    .bg-orbs {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: .35;
+      animation: drift 18s ease-in-out infinite alternate;
+    }
+    .orb-1 { width: 520px; height: 520px; background: #3b82f6; top: -150px; left: -150px; animation-delay: 0s; }
+    .orb-2 { width: 420px; height: 420px; background: #8b5cf6; bottom: -100px; right: -100px; animation-delay: -6s; }
+    .orb-3 { width: 300px; height: 300px; background: #06b6d4; top: 40%; left: 55%; animation-delay: -12s; }
+
+    @keyframes drift {
+      0%   { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(40px, 30px) scale(1.08); }
+    }
+
+    /* ===========================
+       LAYOUT
+    =========================== */
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    /* ===========================
+       HEADER
+    =========================== */
+    header {
+      text-align: center;
+      margin-bottom: 56px;
+    }
+
+    .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(59,130,246,.12);
+      border: 1px solid rgba(59,130,246,.3);
+      border-radius: 100px;
+      padding: 6px 18px;
+      font-size: .75rem;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #93c5fd;
+      margin-bottom: 24px;
+    }
+    .logo-badge span.dot {
+      width: 7px; height: 7px;
+      background: #3b82f6;
+      border-radius: 50%;
+      display: inline-block;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50%       { transform: scale(1.4); opacity: .6; }
+    }
+
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      line-height: 1.15;
+      background: var(--accent-grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 14px;
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      font-size: 1.05rem;
+      line-height: 1.7;
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    /* ===========================
+       CARD
+    =========================== */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 36px 40px;
+      box-shadow: var(--shadow-card);
+      transition: border-color .3s;
+    }
+    .card:hover { border-color: rgba(59,130,246,.3); }
+
+    /* ===========================
+       FILE UPLOAD AREA
+    =========================== */
+    .upload-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    @media (max-width: 600px) {
+      .upload-grid { grid-template-columns: 1fr; }
+      .card { padding: 24px 20px; }
+    }
+
+    .upload-zone {
+      position: relative;
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-md);
+      padding: 32px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .25s, background .25s, transform .2s;
+      background: rgba(255,255,255,.02);
+    }
+    .upload-zone:hover,
+    .upload-zone.drag-over {
+      border-color: var(--accent-1);
+      background: rgba(59,130,246,.06);
+      transform: translateY(-2px);
+    }
+    .upload-zone.has-file {
+      border-color: var(--success);
+      background: rgba(16,185,129,.06);
+    }
+
+    .upload-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .upload-icon {
+      width: 52px; height: 52px;
+      margin: 0 auto 14px;
+      border-radius: var(--radius-sm);
+      background: var(--accent-grad);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+      box-shadow: 0 4px 20px rgba(59,130,246,.35);
+      transition: transform .25s;
+    }
+    .upload-zone:hover .upload-icon { transform: scale(1.1) rotate(-4deg); }
+
+    .upload-label {
+      font-size: .78rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-1);
+      margin-bottom: 6px;
+    }
+
+    .upload-hint {
+      font-size: .82rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+    .upload-hint strong { color: var(--text-primary); }
+
+    .file-name-display {
+      margin-top: 12px;
+      font-size: .78rem;
+      color: var(--success);
+      font-weight: 600;
+      min-height: 18px;
+      word-break: break-all;
+    }
+
+    /* ===========================
+       DIVIDER WITH ICON
+    =========================== */
+    .vs-divider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      color: var(--text-muted);
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    .vs-divider::before,
+    .vs-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ===========================
+       BUTTON
+    =========================== */
+    .btn-check {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: var(--radius-md);
+      background: var(--accent-grad);
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: transform .2s, box-shadow .2s, opacity .2s;
+      box-shadow: 0 4px 24px rgba(59,130,246,.4);
+    }
+    .btn-check:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(59,130,246,.55);
+    }
+    .btn-check:active:not(:disabled) { transform: translateY(0); }
+    .btn-check:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* shimmer sweep */
+    .btn-check::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -75%;
+      width: 50%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.2), transparent);
+      transform: skewX(-20deg);
+      animation: shimmer 2.5s infinite;
+    }
+    @keyframes shimmer {
+      0%   { left: -75%; }
+      100% { left: 130%; }
+    }
+
+    /* ===========================
+       LOADER
+    =========================== */
+    .loader {
+      display: none;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      padding: 20px 0 4px;
+      color: var(--text-secondary);
+      font-size: .9rem;
+    }
+    .loader.visible { display: flex; }
+
+    .spinner {
+      width: 22px; height: 22px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent-1);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ===========================
+       RESULT PANEL
+    =========================== */
+    .result-panel {
+      display: none;
+      margin-top: 32px;
+      background: var(--bg-card-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 28px 32px;
+      animation: fadeUp .4s ease;
+    }
+    .result-panel.visible { display: block; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+    .result-header h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    /* big percentage */
+    .score-container {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .score-value {
+      font-size: clamp(3.5rem, 10vw, 5.5rem);
+      font-weight: 800;
+      line-height: 1;
+      transition: color .4s;
+    }
+    .score-label {
+      font-size: .85rem;
+      color: var(--text-secondary);
+      margin-top: 6px;
+      font-weight: 500;
+    }
+
+    /* progress bar */
+    .progress-track {
+      width: 100%;
+      height: 10px;
+      background: var(--border);
+      border-radius: 100px;
+      overflow: hidden;
+      margin-bottom: 22px;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 100px;
+      width: 0%;
+      transition: width 1s cubic-bezier(.4,0,.2,1), background .4s;
+    }
+
+    /* verdict badge */
+    .verdict {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 100px;
+      padding: 6px 18px;
+      font-size: .82rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+    }
+
+    /* ===========================
+       ERROR MESSAGE
+    =========================== */
+    .error-msg {
+      display: none;
+      margin-top: 20px;
+      background: rgba(239,68,68,.1);
+      border: 1px solid rgba(239,68,68,.3);
+      border-radius: var(--radius-sm);
+      padding: 14px 18px;
+      color: #fca5a5;
+      font-size: .88rem;
+      animation: fadeUp .3s ease;
+    }
+    .error-msg.visible { display: block; }
+
+    /* ===========================
+       FOOTER NOTE
+    =========================== */
+    .footer-note {
+      text-align: center;
+      margin-top: 48px;
+      color: var(--text-muted);
+      font-size: .77rem;
+      letter-spacing: .04em;
+    }
+    .footer-note a { color: var(--accent-1); text-decoration: none; }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient background -->
+  <div class="bg-orbs" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <div class="wrapper">
+
+    <!-- ===== HEADER ===== -->
+    <header>
+      <div class="logo-badge"><span class="dot"></span>DS Mini Project</div>
+      <h1>Plagiarism Checker</h1>
+      <p class="subtitle">
+        Upload two <strong>.txt</strong> documents and our DSA-powered engine
+        will instantly compute their similarity score using custom hash sets
+        and Jaccard-style comparison.
+      </p>
+    </header>
+
+    <!-- ===== MAIN CARD ===== -->
+    <div class="card">
+
+      <div class="upload-grid">
+
+        <!-- FILE 1 -->
+        <div class="upload-zone" id="zone1" role="button" aria-label="Upload Document 1">
+          <input type="file" id="file1" accept=".txt" aria-label="Document 1 file input" />
+          <div class="upload-icon">📄</div>
+          <div class="upload-label">Document 1</div>
+          <p class="upload-hint"><strong>Click or drag</strong> a .txt file here</p>
+          <div class="file-name-display" id="name1"></div>
+        </div>
+
+        <!-- FILE 2 -->
+        <div class="upload-zone" id="zone2" role="button" aria-label="Upload Document 2">
+          <input type="file" id="file2" accept=".txt" aria-label="Document 2 file input" />
+          <div class="upload-icon">📄</div>
+          <div class="upload-label">Document 2</div>
+          <p class="upload-hint"><strong>Click or drag</strong> a .txt file here</p>
+          <div class="file-name-display" id="name2"></div>
+        </div>
+
+      </div><!-- /upload-grid -->
+
+      <!-- ===== TEXT-INPUT SECTION (COMMENTED OUT — activate when needed) =====
+
+      <div class="vs-divider">or enter text directly</div>
+
+      <div style="display:grid;gap:16px;margin-bottom:28px;">
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:8px;">
+            Reference Text
+          </label>
+          <textarea id="text1" rows="5"
+            placeholder="Paste your reference / database text here..."
+            style="width:100%;background:var(--bg-base);border:1px solid var(--border);border-radius:var(--radius-sm);
+                   color:var(--text-primary);font-family:inherit;font-size:.9rem;padding:12px 16px;resize:vertical;
+                   outline:none;transition:border-color .2s;"
+            onfocus="this.style.borderColor='var(--accent-1)'"
+            onblur="this.style.borderColor='var(--border)'"></textarea>
+        </div>
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:8px;">
+            Suspect Text
+          </label>
+          <textarea id="text2" rows="5"
+            placeholder="Paste the text you want to check for plagiarism..."
+            style="width:100%;background:var(--bg-base);border:1px solid var(--border);border-radius:var(--radius-sm);
+                   color:var(--text-primary);font-family:inherit;font-size:.9rem;padding:12px 16px;resize:vertical;
+                   outline:none;transition:border-color .2s;"
+            onfocus="this.style.borderColor='var(--accent-1)'"
+            onblur="this.style.borderColor='var(--border)'"></textarea>
+        </div>
+      </div>
+
+      ===== END TEXT-INPUT SECTION ===== -->
+
+      <div class="vs-divider">ready to analyse</div>
+
+      <button id="checkBtn" class="btn-check" disabled>
+        🔍 &nbsp; Check Similarity
+      </button>
+
+      <div class="loader" id="loader">
+        <div class="spinner"></div>
+        Analysing documents…
+      </div>
+
+      <!-- Error -->
+      <div class="error-msg" id="errorMsg"></div>
+
+      <!-- Result -->
+      <div class="result-panel" id="resultPanel">
+        <div class="result-header">
+          <h2>Analysis Result</h2>
+        </div>
+
+        <div class="score-container">
+          <div class="score-value" id="scoreValue">—</div>
+          <div class="score-label">Similarity Score</div>
+        </div>
+
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <div style="text-align:center;">
+          <span class="verdict" id="verdict"></span>
+        </div>
+      </div>
+
+    </div><!-- /card -->
+
+    <p class="footer-note">
+      Powered by custom <strong>HashSet</strong> &amp; Jaccard comparison ·
+      DS Mini Project 2025
+    </p>
+
+  </div><!-- /wrapper -->
+
+  <script>
+    // -------------------------------------------------------
+    // Element refs
+    // -------------------------------------------------------
+    const file1Input  = document.getElementById('file1');
+    const file2Input  = document.getElementById('file2');
+    const zone1       = document.getElementById('zone1');
+    const zone2       = document.getElementById('zone2');
+    const name1El     = document.getElementById('name1');
+    const name2El     = document.getElementById('name2');
+    const checkBtn    = document.getElementById('checkBtn');
+    const loader      = document.getElementById('loader');
+    const errorMsg    = document.getElementById('errorMsg');
+    const resultPanel = document.getElementById('resultPanel');
+    const scoreValue  = document.getElementById('scoreValue');
+    const progressFill= document.getElementById('progressFill');
+    const verdictEl   = document.getElementById('verdict');
+
+    // -------------------------------------------------------
+    // File selection feedback
+    // -------------------------------------------------------
+    function handleFileChange(input, nameEl, zone) {
+      const file = input.files[0];
+      if (file) {
+        nameEl.textContent = '✓ ' + file.name;
+        zone.classList.add('has-file');
+      } else {
+        nameEl.textContent = '';
+        zone.classList.remove('has-file');
+      }
+      updateBtn();
+    }
+
+    file1Input.addEventListener('change', () => handleFileChange(file1Input, name1El, zone1));
+    file2Input.addEventListener('change', () => handleFileChange(file2Input, name2El, zone2));
+
+    // -------------------------------------------------------
+    // Drag-and-drop visual feedback
+    // -------------------------------------------------------
+    [zone1, zone2].forEach((zone, idx) => {
+      const input = idx === 0 ? file1Input : file2Input;
+      const nameEl = idx === 0 ? name1El : name2El;
+
+      zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+      zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+      zone.addEventListener('drop', e => {
+        e.preventDefault();
+        zone.classList.remove('drag-over');
+        const dt = e.dataTransfer;
+        if (dt.files.length) {
+          // Programmatically assign file to input
+          const newInput = new DataTransfer();
+          newInput.items.add(dt.files[0]);
+          input.files = newInput.files;
+          handleFileChange(input, nameEl, zone);
+        }
+      });
+    });
+
+    // -------------------------------------------------------
+    // Enable button only when both files are selected
+    // -------------------------------------------------------
+    function updateBtn() {
+      checkBtn.disabled = !(file1Input.files[0] && file2Input.files[0]);
+    }
+
+    // -------------------------------------------------------
+    // Submit
+    // -------------------------------------------------------
+    checkBtn.addEventListener('click', async () => {
+      const f1 = file1Input.files[0];
+      const f2 = file2Input.files[0];
+      if (!f1 || !f2) return;
+
+      // Reset UI
+      resultPanel.classList.remove('visible');
+      errorMsg.classList.remove('visible');
+      loader.classList.add('visible');
+      checkBtn.disabled = true;
+
+      try {
+        const formData = new FormData();
+        formData.append('file1', f1);
+        formData.append('file2', f2);
+
+        const res = await fetch('http://localhost:8080/check', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || data.error) {
+          throw new Error(data.error || 'Server error ' + res.status);
+        }
+
+        displayResult(data.similarity);
+
+      } catch (err) {
+        errorMsg.textContent = '⚠️  ' + (err.message || 'Could not connect to the server. Is it running?');
+        errorMsg.classList.add('visible');
+      } finally {
+        loader.classList.remove('visible');
+        updateBtn();
+      }
+    });
+
+    // -------------------------------------------------------
+    // Display result with animation
+    // -------------------------------------------------------
+    function displayResult(pct) {
+      resultPanel.classList.add('visible');
+
+      // Animate counter
+      animateCounter(scoreValue, pct);
+
+      // Color + progress
+      setTimeout(() => {
+        progressFill.style.width = pct + '%';
+
+        let color, bgColor, label, icon;
+        if (pct >= 75) {
+          color = '#ef4444'; bgColor = 'rgba(239,68,68,.15)';
+          label = 'High Plagiarism'; icon = '🚨';
+        } else if (pct >= 40) {
+          color = '#f59e0b'; bgColor = 'rgba(245,158,11,.15)';
+          label = 'Moderate Similarity'; icon = '⚠️';
+        } else {
+          color = '#10b981'; bgColor = 'rgba(16,185,129,.15)';
+          label = 'Likely Original'; icon = '✅';
+        }
+
+        scoreValue.style.color = color;
+        progressFill.style.background = color;
+
+        verdictEl.textContent = icon + '  ' + label;
+        verdictEl.style.background = bgColor;
+        verdictEl.style.color = color;
+        verdictEl.style.border = '1px solid ' + color + '55';
+      }, 80);
+    }
+
+    function animateCounter(el, target) {
+      let start = 0;
+      const duration = 900;
+      const startTime = performance.now();
+
+      function step(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3); // ease-out-cubic
+        const current = eased * target;
+        el.textContent = current.toFixed(1) + '%';
+        el.style.color = '#f1f5f9';  // reset during animation
+        if (progress < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+  </script>
+</body>
+</html>

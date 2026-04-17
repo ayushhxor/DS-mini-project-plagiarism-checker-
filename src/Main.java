@@ -1,3 +1,17 @@
+public class Main {
+
+    public static void main(String[] args) throws Exception {
+        int port = 8080;
+        System.out.println("Plagiarism Detector — starting web UI...");
+        PlagiarismServer.start(port);
+        System.out.println("Open your browser at: http://localhost:" + port);
+    }
+}
+
+// -----------------------------------------------------------------------
+// FILE-BASED CLI version (kept for reference, currently inactive)
+// -----------------------------------------------------------------------
+/*
 import utils.FileHandler;
 import comparison.SimilarityCalculator;
 
@@ -19,8 +33,13 @@ public class Main {
         System.out.println("Similarity: " + result + "%");
     }
 }
+*/
 
-/*import comparison.SimilarityCalculator;
+// -----------------------------------------------------------------------
+// TEXT-INPUT (Scanner) version (kept for reference, currently inactive)
+// -----------------------------------------------------------------------
+/*
+import comparison.SimilarityCalculator;
 import java.util.Scanner;
 
 public class Main {
@@ -41,4 +60,5 @@ public class Main {
 
         System.out.println("Similarity: " + result + "%");
     }
-}*/
+}
+*/
